@@ -168,7 +168,7 @@ if(!hasMove()){shuffle();render();float(4,3,'¡Mezcla!')}}
 function party(){for(let i=0;i<70;i++){const a=Math.random()*6.28,s=3+Math.random()*7,b=bd.getBoundingClientRect();
 fx.push({x:b.width/2,y:b.height/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,l:1.6,c:col(i%N)})}loop()}
 function modal(h){md.innerHTML=h;ov.classList.add('s')}
-function closeModal(){ov.classList.remove('s');busy=false}
+function closeModal(){ov.classList.remove('s');md.innerHTML='';busy=false}
 function back(){closeModal();hud();if(moves<=0&&score<goal)afterMove();else if(!canPlay())noLives()}
 const REGEN=25*60*1e3;
 function passOn(){return passUntil>Date.now()}
@@ -181,7 +181,7 @@ function noLives(){modal(`<div class="big">♡</div><h2>¡Sin vidas!</h2><p>Pró
 <button class="btn g" onclick="buy('p3')">Vidas ilimitadas 7 días · $2.99</button>`)}
 function buyLife(){if(coins<25)return shop();coins-=25;lives=Math.min(5,lives+1);hud();retry()}
 function cont(){if(coins>=30){coins-=30;moves+=5;lost=0;if(!passOn())lives=Math.min(5,lives+1);closeModal();hud();snd(600,.2)}else shop()}
-setInterval(()=>{regen();$('#bs').textContent=passOn()?'∞':lives;const e=$('#cd');if(e){e.textContent=fmt();if(canPlay())retry()}},1000);
+setInterval(()=>{regen();$('#bs').textContent=passOn()?'∞':lives;const e=$('#cd');if(e&&ov.classList.contains('s')){e.textContent=fmt();if(canPlay())retry()}},1000);
 function daily(){const d=new Date().toDateString();if(lastDay===d)return;
 ds=lastDay===new Date(Date.now()-864e5).toDateString()?ds+1:1;lastDay=d;const r=Math.min(ds*10,100),n=Math.min((ds+1)*10,100);coins+=r;hud();snd(700,.25);
 modal(`<div class="big">+${r}</div><h2>Regalo diario</h2><p>Racha: ${ds} día${ds>1?'s':''}. Vuelve mañana por +${n} monedas.</p><button class="btn" onclick="back()">¡Recoger!</button>`)}
