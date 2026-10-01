@@ -49,7 +49,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .btn.on{background:#fff}
 .ov{position:fixed;inset:0;background:rgba(10,5,25,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:9;padding:20px}
 .ov.s{display:grid}
-.md{width:min(92vw,360px);background:linear-gradient(160deg,#4a2a94,#241047);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .35s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.md{max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:min(92vw,360px);background:linear-gradient(160deg,#4a2a94,#241047);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .35s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 @keyframes pop{from{transform:scale(.7);opacity:0}}
 .md h2{margin:0 0 4px;font-size:30px;line-height:1}
 .md p{margin:6px 0 14px;color:var(--mut)}
@@ -190,13 +190,15 @@ function retry(){if(!canPlay())return noLives();closeModal();startLevel()}
 function shop(){modal(`<h2>Tienda</h2><p>Tus monedas: ${coins}${passOn()?' · Vidas ilimitadas ✓':''}</p>`+CONFIG.packs.filter(p=>!p.once||!bought).map(p=>
 `<button class="btn" onclick="buy('${p.id}')">${p.n} · ${p.p}${p.once?'<small>Oferta única de bienvenida (mejor valor)</small>':''}</button>`).join('')+
 `<p style="font-size:12px;margin:12px 0 0">Pago seguro con PayPal o tarjeta.</p><button class="btn g" onclick="back()">Volver</button>`)}
+async function payRedirect(id){const b=$('#pr2');b.textContent='Abriendo PayPal…';
+try{const d=await post('create-order',{pack:id,redirect:true});if(!d.url)throw 0;location.href=d.url}catch(e){b.textContent='No se pudo abrir PayPal. Toca para reintentar.'}}
 let ppL;
 function loadPP(){return ppL||(ppL=new Promise((ok,ko)=>{const e=document.createElement('script');
 e.src='https://www.paypal.com/sdk/js?client-id='+CONFIG.paypalClientId+'&currency='+CONFIG.currency+'&components=buttons&enable-funding=card';
 e.onload=ok;e.onerror=()=>{ppL=0;ko()};document.head.appendChild(e)}))}
 const post=(f,b)=>fetch('/.netlify/functions/'+f,{method:'POST',body:JSON.stringify(b)}).then(r=>r.json());
 async function buy(id){const pk=CONFIG.packs.find(x=>x.id===id);
-modal(`<h2>${pk.n}</h2><p>${pk.p} · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" onclick="shop()">Volver</button>`);
+modal(`<h2>${pk.n}</h2><p>${pk.p} · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" id="pr2" onclick="payRedirect('${id}')">Pagar en la página de PayPal (si el formulario no avanza)</button><button class="btn g" onclick="shop()">Volver</button>`);
 const pp=$('#pp');
 const noId=()=>!CONFIG.paypalClientId||CONFIG.paypalClientId.startsWith('TU_');
 if(noId()){try{const c=await fetch('/.netlify/functions/config').then(r=>r.json());if(c.clientId)CONFIG.paypalClientId=c.clientId}catch(e){}}
@@ -218,6 +220,14 @@ $('#bb').onclick=()=>{if(busy)return;if(coins<40)return shop();coins-=40;g[4][3]
 $('#cb').onclick=()=>{if(!busy)shop()};
 modal(`<div class="big">◆</div><h2>Gemas Pop</h2><p>Toca 2 o más gemas iguales pegadas. Grupos de 6 crean una ★ bomba. ¡Encadena combos para más puntos!</p><button class="btn" onclick="closeModal();snd(520);daily();if(!ov.classList.contains('s'))back()">Jugar</button>`);
 startLevel();
+(async()=>{const q=new URLSearchParams(location.search),t=q.get('token'),m=q.get('pp');if(!m)return;history.replaceState(null,'',location.pathname);
+if(m==='ok'&&t){modal('<h2>Confirmando pago…</h2><p>Un momento, no cierres la página.</p>');
+try{const x=await post('capture-order',{orderID:t});
+if(x.ok){bought=1;coins+=x.coins;if(x.passDays)passUntil=Math.max(Date.now(),passUntil)+x.passDays*864e5;hud();snd(700,.3);party();
+modal(`<div class="big">★</div><h2>¡Gracias!</h2><p>${x.passDays?'Vidas ilimitadas activadas':'+'+x.coins+' monedas añadidas'}</p><button class="btn" onclick="back()">Seguir jugando</button>`)}
+else modal('<h2>No pudimos confirmar el pago</h2><p>Si se te cobró, escríbenos con tu comprobante de PayPal.</p><button class="btn" onclick="back()">Volver</button>')}
+catch(e){modal('<h2>Error de conexión</h2><p>Revisa tu internet. Si se te cobró, escríbenos con tu comprobante.</p><button class="btn" onclick="back()">Volver</button>')}}
+else modal('<h2>Pago cancelado</h2><p>No se hizo ningún cobro.</p><button class="btn" onclick="back()">Volver</button>')})();
 </script>
 </body>
 </html>
