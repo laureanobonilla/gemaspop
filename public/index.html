@@ -44,17 +44,17 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .tools{width:min(92vw,420px);display:flex;gap:8px}
 .btn{flex:1;border:0;border-radius:18px;padding:10px 6px;font:inherit;font-weight:800;font-size:15px;color:#2a1250;background:var(--acc);box-shadow:0 4px 0 #b8901a;cursor:pointer}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8901a}
-.btn.g{background:var(--card);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35)}
-.btn small{display:block;font-weight:600;font-size:11px;opacity:.75}
+.btn.g{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.btn small{display:block;font-weight:700;font-size:13px;opacity:1;margin-top:2px}
 .btn.on{background:#fff}
 .ov{position:fixed;inset:0;background:rgba(10,5,25,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:9;padding:20px}
 .ov.s{display:grid}
-.md{max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:min(92vw,360px);background:linear-gradient(160deg,#4a2a94,#241047);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .35s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.md{max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:min(92vw,360px);background:linear-gradient(160deg,#35196e,#190a38);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .35s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 @keyframes pop{from{transform:scale(.7);opacity:0}}
 .md h2{margin:0 0 4px;font-size:30px;line-height:1}
-.md p{margin:6px 0 14px;color:var(--mut)}
+.md p{margin:6px 0 14px;color:#fff;font-size:16px;font-weight:600}
 .md .btn{display:block;width:100%;margin-top:9px;padding:13px}
-#pp{margin:12px 0 4px;min-height:110px}.big{font-size:52px;font-weight:800;color:var(--acc);line-height:1}
+#pp{margin:12px 0 8px;min-height:110px;background:#fff;border-radius:16px;padding:12px;color:#1b1033;font-weight:700}.big{font-size:52px;font-weight:800;color:var(--acc);line-height:1}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
 </style>
 </head>
@@ -189,7 +189,7 @@ function next(){lvl++;closeModal();startLevel()}
 function retry(){if(!canPlay())return noLives();closeModal();startLevel()}
 function shop(){modal(`<h2>Tienda</h2><p>Tus monedas: ${coins}${passOn()?' · Vidas ilimitadas ✓':''}</p>`+CONFIG.packs.filter(p=>!p.once||!bought).map(p=>
 `<button class="btn" onclick="buy('${p.id}')">${p.n} · ${p.p}${p.once?'<small>Oferta única de bienvenida (mejor valor)</small>':''}</button>`).join('')+
-`<p style="font-size:12px;margin:12px 0 0">Pago seguro con PayPal o tarjeta.</p><button class="btn g" onclick="back()">Volver</button>`)}
+`<p style="font-size:14px;margin:12px 0 0">Pago seguro con PayPal o tarjeta.</p><button class="btn g" onclick="back()">Volver</button>`)}
 async function payRedirect(id){const b=$('#pr2');b.textContent='Abriendo PayPal…';
 try{const d=await post('create-order',{pack:id,redirect:true});if(!d.url)throw 0;location.href=d.url}catch(e){b.textContent='No se pudo abrir PayPal. Toca para reintentar.'}}
 let ppL;
@@ -198,7 +198,7 @@ e.src='https://www.paypal.com/sdk/js?client-id='+CONFIG.paypalClientId+'&currenc
 e.onload=ok;e.onerror=()=>{ppL=0;ko()};document.head.appendChild(e)}))}
 const post=(f,b)=>fetch('/.netlify/functions/'+f,{method:'POST',body:JSON.stringify(b)}).then(r=>r.json());
 async function buy(id){const pk=CONFIG.packs.find(x=>x.id===id);
-modal(`<h2>${pk.n}</h2><p>${pk.p} · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" id="pr2" onclick="payRedirect('${id}')">Pagar en la página de PayPal (si el formulario no avanza)</button><button class="btn g" onclick="shop()">Volver</button>`);
+modal(`<h2>${pk.n}</h2><div class="big" style="font-size:46px">${pk.p}</div><p>Total a pagar · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" id="pr2" onclick="payRedirect('${id}')">Pagar en la página de PayPal (si el formulario no avanza)</button><button class="btn g" onclick="shop()">Volver</button>`);
 const pp=$('#pp');
 const noId=()=>!CONFIG.paypalClientId||CONFIG.paypalClientId.startsWith('TU_');
 if(noId()){try{const c=await fetch('/.netlify/functions/config').then(r=>r.json());if(c.clientId)CONFIG.paypalClientId=c.clientId}catch(e){}}
