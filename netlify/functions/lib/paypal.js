@@ -1,8 +1,8 @@
 // Precios y monedas VIVEN AQUÍ (servidor): el navegador no puede alterarlos.
 const PACKS = {
-  p1: { name: '150 monedas', price: '0.99', coins: 150 },
+  p1: { name: '300 monedas', price: '1.99', coins: 300 },
   p2: { name: '500 monedas', price: '2.99', coins: 500 },
-  p4: { name: 'Pack inicial (oferta única)', price: '0.99', coins: 500 },
+  p4: { name: 'Pack inicial (oferta única)', price: '1.99', coins: 500 },
   p3: { name: 'Vidas ilimitadas 7 días', price: '2.99', coins: 0, passDays: 7 },
 };
 const CURRENCY = 'USD';
