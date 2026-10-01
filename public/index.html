@@ -198,7 +198,9 @@ const post=(f,b)=>fetch('/.netlify/functions/'+f,{method:'POST',body:JSON.string
 async function buy(id){const pk=CONFIG.packs.find(x=>x.id===id);
 modal(`<h2>${pk.n}</h2><p>${pk.p} · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" onclick="shop()">Volver</button>`);
 const pp=$('#pp');
-if(CONFIG.paypalClientId.startsWith('TU_')){pp.textContent='Falta configurar el Client ID de PayPal.';return}
+const noId=()=>!CONFIG.paypalClientId||CONFIG.paypalClientId.startsWith('TU_');
+if(noId()){try{const c=await fetch('/.netlify/functions/config').then(r=>r.json());if(c.clientId)CONFIG.paypalClientId=c.clientId}catch(e){}}
+if(noId()){pp.textContent='Falta configurar el Client ID de PayPal.';return}
 try{await loadPP()}catch(e){pp.textContent='No se pudo cargar el pago. Revisa tu conexión.';return}
 paypal.Buttons({style:{layout:'vertical',shape:'pill',label:'pay'},
 createOrder:async()=>{const d=await post('create-order',{pack:id});if(!d.id)throw new Error('order');return d.id},
