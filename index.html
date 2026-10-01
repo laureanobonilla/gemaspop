@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1b1033">
+<title>Gemas Pop – toca, explota, sube de nivel</title>
+<meta name="description" content="Toca grupos de gemas del mismo color, encadena combos y supera cada nivel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#1b1033;--bg2:#3a1c71;--card:rgba(255,255,255,.09);--txt:#fff;--mut:#c9b8ff;--acc:#ffd23f;
+--c0:#ff4d6d;--c1:#ffb703;--c2:#2ec4b6;--c3:#4d7cff;--c4:#c77dff;--c5:#6ee06e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{font-family:'Baloo 2',system-ui,sans-serif;color:var(--txt);background:radial-gradient(120% 80% at 50% 0,var(--bg2),var(--bg1));
+padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;touch-action:manipulation}
+.top{width:min(92vw,420px);display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px}
+.pill{flex:1;background:var(--card);border-radius:16px;padding:6px 12px;backdrop-filter:blur(8px);line-height:1.1}
+.pill small{display:block;color:var(--mut);font-size:12px;font-weight:600}
+.pill b{font-size:22px;font-weight:800}
+.pill.coin{cursor:pointer;flex:none;min-width:96px;text-align:right}
+.bar{height:14px;border-radius:9px;background:rgba(0,0,0,.35);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#ffd23f,#ff7b54);transition:width .35s cubic-bezier(.3,1.4,.5,1)}
+.goal{font-size:13px;color:var(--mut);display:flex;justify-content:space-between;font-weight:600}
+.wrap{position:relative;width:min(92vw,420px);aspect-ratio:7/9;max-height:62dvh;max-width:calc(62dvh*7/9)}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(9,1fr);gap:5px;padding:7px;
+background:rgba(0,0,0,.28);border-radius:24px;box-shadow:inset 0 2px 12px rgba(0,0,0,.4),0 10px 40px rgba(0,0,0,.35)}
+.t{border-radius:32%;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.75) 0 9%,transparent 22%),linear-gradient(150deg,var(--c),color-mix(in srgb,var(--c) 60%,#000));
+box-shadow:0 3px 0 color-mix(in srgb,var(--c) 45%,#000);transition:transform .12s;display:grid;place-items:center;font-size:22px;color:#fff}
+.t:active{transform:scale(.9)}
+.t.n{animation:drop .42s cubic-bezier(.3,1.5,.5,1) both}
+.t.b{background:radial-gradient(circle,#fff 0 25%,var(--c) 70%);animation:pulse .9s infinite alternate;box-shadow:0 0 16px var(--c)}
+.t.no{animation:shake .25s}
+.t.hm{outline:3px dashed var(--acc);outline-offset:-3px}
+@keyframes drop{from{transform:translateY(-140%);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse{to{transform:scale(1.08)}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fl{position:absolute;pointer-events:none;font-weight:800;font-size:26px;color:var(--acc);text-shadow:0 2px 0 rgba(0,0,0,.5);transform:translate(-50%,-50%);animation:fl .9s ease-out forwards;white-space:nowrap}
+@keyframes fl{to{transform:translate(-50%,-190%) scale(1.25);opacity:0}}
+.tools{width:min(92vw,420px);display:flex;gap:8px}
+.btn{flex:1;border:0;border-radius:18px;padding:10px 6px;font:inherit;font-weight:800;font-size:15px;color:#2a1250;background:var(--acc);box-shadow:0 4px 0 #b8901a;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8901a}
+.btn.g{background:var(--card);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.btn small{display:block;font-weight:600;font-size:11px;opacity:.75}
+.btn.on{background:#fff}
+.ov{position:fixed;inset:0;background:rgba(10,5,25,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:9;padding:20px}
+.ov.s{display:grid}
+.md{width:min(92vw,360px);background:linear-gradient(160deg,#4a2a94,#241047);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .35s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.md h2{margin:0 0 4px;font-size:30px;line-height:1}
+.md p{margin:6px 0 14px;color:var(--mut)}
+.md .btn{display:block;width:100%;margin-top:9px;padding:13px}
+#pp{margin:12px 0 4px;min-height:110px}.big{font-size:52px;font-weight:800;color:var(--acc);line-height:1}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="row">
+    <div class="pill"><small>Nivel</small><b id="lv">1</b></div>
+    <div class="pill"><small>Movimientos</small><b id="mv">20</b></div>
+    <div class="pill"><small>Récord</small><b id="bs">0</b></div>
+    <div class="pill coin" id="cb"><small>Monedas +</small><b id="co">0</b></div>
+  </div>
+  <div class="bar"><i id="pr"></i></div>
+  <div class="goal"><span id="sc">0 pts</span><span id="gl">Meta 400</span></div>
+</div>
+<div class="wrap"><div class="board" id="bd"></div><canvas id="cv"></canvas></div>
+<div class="tools">
+  <button class="btn g" id="bh">Martillo<small>30 monedas</small></button>
+  <button class="btn g" id="bsh">Mezclar<small>20 monedas</small></button>
+</div>
+<div class="ov" id="ov"><div class="md" id="md"></div></div>
+
+<script>
+/* ============ CONFIGURACIÓN DE MONETIZACIÓN (edita aquí) ============
+ Pega tus enlaces de pago (Stripe Payment Links, Mercado Pago, PayPal...) y tu SDK de anuncios. */
+const CONFIG={
+  paypalClientId:'TU_CLIENT_ID_DE_PAYPAL', // público; el secreto va solo en Netlify
+  currency:'USD',
+  packs:[{id:'p1',n:'150 monedas',p:'$0.99'},
+         {id:'p2',n:'500 monedas',p:'$2.99'},
+         {id:'p3',n:'Sin anuncios + 1000 monedas',p:'$4.99'},
+         {id:'p4',n:'Pack inicial · 500 monedas',p:'$0.99',once:1}], // precios reales: netlify/functions/lib/paypal.js
+  showRewardedAd:()=>new Promise(r=>setTimeout(r,1200)) // reemplaza por tu SDK de anuncios
+};
+/* ===================================================================== */
+let N=5,noAds=0,lastTap=0,bought=0,lastDay='',ds=0;const R=9,C=7,$=s=>document.querySelector(s);
+const bd=$('#bd'),cv=$('#cv'),cx=cv.getContext('2d'),ov=$('#ov'),md=$('#md');
+let g=[],score=0,moves=20,lvl=1,coins=50,best=0,streak=0,hammer=false,busy=false,goal=400,fx=[],ac;
+try{bought=+localStorage.gp_bought||0;lastDay=localStorage.gp_day||'';ds=+localStorage.gp_ds||0;noAds=+localStorage.gp_noads||0;best=+localStorage.gp_best||0;coins=localStorage.gp_coins?+localStorage.gp_coins:50}catch(e){}
+const save=()=>{try{localStorage.gp_best=best;localStorage.gp_coins=coins;localStorage.gp_noads=noAds;localStorage.gp_bought=bought;localStorage.gp_day=lastDay;localStorage.gp_ds=ds}catch(e){}};
+const rnd=()=>({t:Math.random()*N|0,n:1});
+
+function snd(f,d=.09,type='triangle'){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();
+o.type=type;o.frequency.value=f;v.gain.setValueAtTime(.12,ac.currentTime);v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);
+o.connect(v).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const vib=n=>navigator.vibrate&&navigator.vibrate(n);
+
+function startLevel(){goal=1200+(lvl-1)*500;moves=Math.max(12,20-Math.floor((lvl-1)/2));N=lvl>=4?6:5;score=0;streak=0;g=[];
+for(let r=0;r<R;r++){g.push([]);for(let c=0;c<C;c++)g[r].push(rnd())}
+if(!hasMove())shuffle();render();hud()}
+function hud(){$('#lv').textContent=lvl;$('#mv').textContent=moves;$('#bs').textContent=best;$('#co').textContent=coins;
+$('#sc').textContent=score+' pts';$('#gl').textContent='Meta '+goal;$('#pr').style.width=Math.min(100,score/goal*100)+'%';save()}
+
+function render(){bd.innerHTML='';const f=document.createDocumentFragment();
+for(let r=0;r<R;r++)for(let c=0;c<C;c++){const x=g[r][c],d=document.createElement('div');
+d.className='t'+(x.b?' b':'')+(x.n?' n':'');d.style.setProperty('--c',`var(--c${x.t})`);d.dataset.r=r;d.dataset.c=c;
+if(x.b)d.textContent='★';if(x.n){d.style.animationDelay=(c*25)+'ms';x.n=0}f.appendChild(d)}
+bd.appendChild(f)}
+
+function group(r,c){const t=g[r][c].t,seen=new Set([r*C+c]),q=[[r,c]];
+while(q.length){const[a,b]=q.pop();for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const y=a+dr,x=b+dc;
+if(y<0||x<0||y>=R||x>=C||seen.has(y*C+x))continue;const k=g[y][x];if(!k.b&&k.t===t){seen.add(y*C+x);q.push([y,x])}}}
+return[...seen].map(i=>[i/C|0,i%C])}
+function hasMove(){for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(g[r][c].b||group(r,c).length>1)return true;return false}
+function shuffle(){do{for(let r=0;r<R;r++)for(let c=0;c<C;c++){g[r][c].t=Math.random()*N|0}}while(!hasMove())}
+
+function cellXY(r,c){const e=bd.children[r*C+c].getBoundingClientRect(),b=bd.getBoundingClientRect();return[e.left-b.left+e.width/2,e.top-b.top+e.height/2]}
+function burst(r,c,col){const[x,y]=cellXY(r,c);for(let i=0;i<9;i++){const a=Math.random()*6.28,s=2+Math.random()*4;
+fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,l:1,c:col})}if(fx.length===9)loop()}
+function loop(){const b=bd.getBoundingClientRect(),k=devicePixelRatio||1;if(cv.width!==b.width*k){cv.width=b.width*k;cv.height=b.height*k}
+cx.setTransform(k,0,0,k,0,0);cx.clearRect(0,0,b.width,b.height);
+fx=fx.filter(p=>p.l>0);for(const p of fx){p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.l-=.028;cx.globalAlpha=Math.max(p.l,0);cx.fillStyle=p.c;
+cx.beginPath();cx.arc(p.x,p.y,4*p.l+1,0,6.28);cx.fill()}
+if(fx.length)requestAnimationFrame(loop);else cx.clearRect(0,0,b.width,b.height)}
+function float(r,c,txt){const[x,y]=cellXY(r,c),d=document.createElement('div');d.className='fl';d.textContent=txt;
+d.style.left=x+'px';d.style.top=y+'px';$('.wrap').appendChild(d);setTimeout(()=>d.remove(),900)}
+const col=t=>getComputedStyle(document.documentElement).getPropertyValue('--c'+t);
+
+function remove(cells,pr,pc,mkBomb){cells.forEach(([r,c])=>{burst(r,c,col(g[r][c].t));g[r][c]=null});
+if(mkBomb)g[pr][pc]={t:mkBomb.t,b:1};
+for(let c=0;c<C;c++){const keep=[];for(let r=R-1;r>=0;r--)if(g[r][c])keep.push(g[r][c]);
+for(let r=R-1;r>=0;r--)g[r][c]=keep[R-1-r]||rnd()}}
+
+function tap(r,c){if(busy)return;const x=g[r][c];
+if(hammer){hammer=false;$('#bh').classList.remove('on');remove([[r,c]],0,0);snd(300,.15,'square');vib(20);float(r,c,'¡Bam!');render();afterMove(0);return}
+let cells,size;
+if(x.b){cells=[];for(let a=r-1;a<=r+1;a++)for(let b=c-1;b<=c+1;b++)if(a>=0&&b>=0&&a<R&&b<C)cells.push([a,b]);size=cells.length+4}
+else{cells=group(r,c);size=cells.length;
+ if(size<2){bd.children[r*C+c].classList.add('no');snd(140,.12,'sawtooth');vib(30);streak=0;moves--;hud();setTimeout(()=>{render();afterMove()},260);return}}
+const now=Date.now();if(now-lastTap>3000)streak=0;lastTap=now;streak=size>=4?streak+1:0;
+const mult=1+Math.min(streak,6)*.25,pts=Math.round(size*size*5*mult);
+const bomb=!x.b&&size>=6?{t:x.t}:null;
+remove(cells,r,c,bomb);score+=pts;moves--;
+const say=size>=9?'¡INCREÍBLE!':size>=6?'¡Genial!':size>=4?'¡Bien!':'';
+float(r,c,'+'+pts+(streak>1?'  x'+mult.toFixed(2).replace(/0$/,''):''));
+if(say)setTimeout(()=>float(Math.max(r-1,0),c,say),120);
+const gain=Math.floor(size/3);if(gain){coins+=gain}
+snd(380+Math.min(streak,8)*70,.11);vib(size>=6?[15,30,15]:12);
+render();afterMove(size)}
+
+function afterMove(){hud();
+if(score>best){best=score;hud()}
+if(score>=goal){busy=true;const bonus=moves*3+20;coins+=bonus;snd(660,.3);setTimeout(()=>snd(880,.4),150);vib([40,40,40]);
+party();setTimeout(()=>modal(`<div class="big">${moves>=8?'★★★':moves>=4?'★★☆':'★☆☆'}</div><h2>¡Nivel ${lvl} superado!</h2><p>${score} puntos · +${bonus} monedas de bonus</p>
+<button class="btn" onclick="next()">Siguiente nivel</button><button class="btn g" onclick="share()">Compartir</button>`),700);return}
+if(moves<=0){busy=true;setTimeout(()=>modal(`<h2>¡Sin movimientos!</h2><p>Te faltaron ${goal-score} puntos. ¡Estabas cerca!</p>
+<button class="btn" onclick="cont()">Seguir +5 movimientos · 30 monedas</button>${bought?'':'<button class="btn g" onclick="buy(\'p4\')">Oferta: 500 monedas por $0.99</button>'}<button class="btn g" onclick="revive()">Ver anuncio: +5 movimientos</button>
+<button class="btn g" onclick="retry()">Reintentar nivel</button><button class="btn g" onclick="shop()">Tienda</button>`),500);return}
+if(!hasMove()){shuffle();render();float(4,3,'¡Mezcla!')}}
+
+function party(){for(let i=0;i<70;i++){const a=Math.random()*6.28,s=3+Math.random()*7,b=bd.getBoundingClientRect();
+fx.push({x:b.width/2,y:b.height/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,l:1.6,c:col(i%N)})}loop()}
+function modal(h){md.innerHTML=h;ov.classList.add('s')}
+function closeModal(){ov.classList.remove('s');busy=false}
+function back(){closeModal();hud();if(moves<=0&&score<goal)afterMove()}
+function cont(){if(coins>=30){coins-=30;moves+=5;closeModal();hud();snd(600,.2)}else shop()}
+function daily(){const d=new Date().toDateString();if(lastDay===d)return;
+ds=lastDay===new Date(Date.now()-864e5).toDateString()?ds+1:1;lastDay=d;const r=Math.min(10+ds*10,100),n=Math.min(10+(ds+1)*10,100);coins+=r;hud();snd(700,.25);
+modal(`<div class="big">+${r}</div><h2>Regalo diario</h2><p>Racha: ${ds} día${ds>1?'s':''}. Vuelve mañana por +${n} monedas.</p><button class="btn" onclick="closeModal()">¡Recoger!</button>`)}
+function next(){lvl++;closeModal();startLevel()}
+function retry(){closeModal();startLevel()}
+async function revive(){md.innerHTML='<h2>Cargando anuncio…</h2>';if(!noAds)await CONFIG.showRewardedAd();moves+=5;closeModal();hud()}
+function shop(){modal(`<h2>Tienda</h2><p>Tus monedas: ${coins}${noAds?' · Sin anuncios ✓':''}</p>`+CONFIG.packs.filter(p=>!p.once||!bought).map(p=>
+`<button class="btn" onclick="buy('${p.id}')">${p.n} · ${p.p}${p.once?'<small>Oferta única de bienvenida (mejor valor)</small>':''}</button>`).join('')+
+`<p style="font-size:12px;margin:12px 0 0">Pago seguro con PayPal o tarjeta.</p><button class="btn g" onclick="back()">Volver</button>`)}
+let ppL;
+function loadPP(){return ppL||(ppL=new Promise((ok,ko)=>{const e=document.createElement('script');
+e.src='https://www.paypal.com/sdk/js?client-id='+CONFIG.paypalClientId+'&currency='+CONFIG.currency+'&components=buttons&enable-funding=card';
+e.onload=ok;e.onerror=()=>{ppL=0;ko()};document.head.appendChild(e)}))}
+const post=(f,b)=>fetch('/.netlify/functions/'+f,{method:'POST',body:JSON.stringify(b)}).then(r=>r.json());
+async function buy(id){const pk=CONFIG.packs.find(x=>x.id===id);
+modal(`<h2>${pk.n}</h2><p>${pk.p} · PayPal o tarjeta</p><div id="pp"></div><button class="btn g" onclick="shop()">Volver</button>`);
+const pp=$('#pp');
+if(CONFIG.paypalClientId.startsWith('TU_')){pp.textContent='Falta configurar el Client ID de PayPal.';return}
+try{await loadPP()}catch(e){pp.textContent='No se pudo cargar el pago. Revisa tu conexión.';return}
+paypal.Buttons({style:{layout:'vertical',shape:'pill',label:'pay'},
+createOrder:async()=>{const d=await post('create-order',{pack:id});if(!d.id)throw new Error('order');return d.id},
+onApprove:async d=>{const x=await post('capture-order',{orderID:d.orderID});
+if(x.ok){bought=1;coins+=x.coins;if(x.noAds)noAds=1;hud();snd(700,.3);party();modal(`<div class="big">★</div><h2>¡Gracias!</h2><p>+${x.coins} monedas añadidas</p><button class="btn" onclick="closeModal()">Seguir jugando</button>`)}
+else pp.textContent='No pudimos confirmar el pago. Si se te cobró, escríbenos con tu comprobante de PayPal.'},
+onError:()=>{pp.textContent='Hubo un problema con el pago. Inténtalo de nuevo.'}}).render('#pp')}
+function share(){const t=`Superé el nivel ${lvl} en Gemas Pop con ${score} puntos. ¿Me ganas?`;
+navigator.share?navigator.share({text:t,url:location.href}).catch(()=>{}):navigator.clipboard&&navigator.clipboard.writeText(t+' '+location.href)}
+
+bd.addEventListener('pointerdown',e=>{const t=e.target.closest('.t');if(t)tap(+t.dataset.r,+t.dataset.c)});
+$('#bh').onclick=()=>{if(busy)return;if(hammer){hammer=false}else if(coins>=30){coins-=30;hammer=true;hud()}else return shop();$('#bh').classList.toggle('on',hammer)};
+$('#bsh').onclick=()=>{if(busy)return;if(coins<20)return shop();coins-=20;shuffle();render();hud();snd(500,.2)};
+$('#cb').onclick=()=>{if(!busy)shop()};
+modal(`<div class="big">◆</div><h2>Gemas Pop</h2><p>Toca 2 o más gemas iguales pegadas. Grupos de 6 crean una ★ bomba. ¡Encadena combos para más puntos!</p><button class="btn" onclick="closeModal();snd(520);daily()">Jugar</button>`);
+startLevel();
+</script>
+</body>
+</html>
