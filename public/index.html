@@ -63,7 +63,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   <div class="row">
     <div class="pill"><small>Nivel</small><b id="lv">1</b></div>
     <div class="pill"><small>Movimientos</small><b id="mv">20</b></div>
-    <div class="pill"><small>Récord</small><b id="bs">0</b></div>
+    <div class="pill"><small>Vidas</small><b id="bs">5</b></div>
     <div class="pill coin" id="cb"><small>Monedas +</small><b id="co">0</b></div>
   </div>
   <div class="bar"><i id="pr"></i></div>
@@ -72,6 +72,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 <div class="wrap"><div class="board" id="bd"></div><canvas id="cv"></canvas></div>
 <div class="tools">
   <button class="btn g" id="bh">Martillo<small>30 monedas</small></button>
+  <button class="btn g" id="bb">Bomba<small>40 monedas</small></button>
   <button class="btn g" id="bsh">Mezclar<small>20 monedas</small></button>
 </div>
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
@@ -84,16 +85,15 @@ const CONFIG={
   currency:'USD',
   packs:[{id:'p1',n:'150 monedas',p:'$0.99'},
          {id:'p2',n:'500 monedas',p:'$2.99'},
-         {id:'p3',n:'Sin anuncios + 1000 monedas',p:'$4.99'},
+         {id:'p3',n:'Vidas ilimitadas 7 días',p:'$2.99'},
          {id:'p4',n:'Pack inicial · 500 monedas',p:'$0.99',once:1}], // precios reales: netlify/functions/lib/paypal.js
-  showRewardedAd:()=>new Promise(r=>setTimeout(r,1200)) // reemplaza por tu SDK de anuncios
 };
 /* ===================================================================== */
-let N=5,noAds=0,lastTap=0,bought=0,lastDay='',ds=0;const R=9,C=7,$=s=>document.querySelector(s);
+let N=5,passUntil=0,lives=5,lt=Date.now(),lost=0,lastTap=0,bought=0,lastDay='',ds=0;const R=9,C=7,$=s=>document.querySelector(s);
 const bd=$('#bd'),cv=$('#cv'),cx=cv.getContext('2d'),ov=$('#ov'),md=$('#md');
-let g=[],score=0,moves=20,lvl=1,coins=50,best=0,streak=0,hammer=false,busy=false,goal=400,fx=[],ac;
-try{bought=+localStorage.gp_bought||0;lastDay=localStorage.gp_day||'';ds=+localStorage.gp_ds||0;noAds=+localStorage.gp_noads||0;best=+localStorage.gp_best||0;coins=localStorage.gp_coins?+localStorage.gp_coins:50}catch(e){}
-const save=()=>{try{localStorage.gp_best=best;localStorage.gp_coins=coins;localStorage.gp_noads=noAds;localStorage.gp_bought=bought;localStorage.gp_day=lastDay;localStorage.gp_ds=ds}catch(e){}};
+let g=[],score=0,moves=20,lvl=1,coins=40,best=0,streak=0,hammer=false,busy=false,goal=400,fx=[],ac;
+try{bought=+localStorage.gp_bought||0;lastDay=localStorage.gp_day||'';ds=+localStorage.gp_ds||0;passUntil=+localStorage.gp_pass||0;lives=localStorage.gp_lives?+localStorage.gp_lives:5;lt=+localStorage.gp_lt||Date.now();best=+localStorage.gp_best||0;coins=localStorage.gp_coins?+localStorage.gp_coins:40}catch(e){}
+const save=()=>{try{localStorage.gp_best=best;localStorage.gp_coins=coins;localStorage.gp_pass=passUntil;localStorage.gp_lives=lives;localStorage.gp_lt=lt;localStorage.gp_bought=bought;localStorage.gp_day=lastDay;localStorage.gp_ds=ds}catch(e){}};
 const rnd=()=>({t:Math.random()*N|0,n:1});
 
 function snd(f,d=.09,type='triangle'){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();
@@ -101,11 +101,11 @@ o.type=type;o.frequency.value=f;v.gain.setValueAtTime(.12,ac.currentTime);v.gain
 o.connect(v).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 const vib=n=>navigator.vibrate&&navigator.vibrate(n);
 
-function startLevel(){goal=1200+(lvl-1)*500;moves=Math.max(12,20-Math.floor((lvl-1)/2));N=lvl>=4?6:5;score=0;streak=0;g=[];
+function startLevel(){lost=0;goal=lvl<=5?700+(lvl-1)*200:1600+(lvl-5)*450;moves=lvl<=5?22:Math.max(13,20-Math.floor((lvl-5)/2));N=lvl>=6?6:5;score=0;streak=0;g=[];
 for(let r=0;r<R;r++){g.push([]);for(let c=0;c<C;c++)g[r].push(rnd())}
 if(!hasMove())shuffle();render();hud()}
-function hud(){$('#lv').textContent=lvl;$('#mv').textContent=moves;$('#bs').textContent=best;$('#co').textContent=coins;
-$('#sc').textContent=score+' pts';$('#gl').textContent='Meta '+goal;$('#pr').style.width=Math.min(100,score/goal*100)+'%';save()}
+function hud(){regen();$('#lv').textContent=lvl;$('#mv').textContent=moves;$('#bs').textContent=passOn()?'∞':lives;$('#co').textContent=coins;
+$('#sc').textContent=score+' pts';$('#gl').textContent='Meta '+goal+' · Récord '+best;$('#pr').style.width=Math.min(100,score/goal*100)+'%';save()}
 
 function render(){bd.innerHTML='';const f=document.createDocumentFragment();
 for(let r=0;r<R;r++)for(let c=0;c<C;c++){const x=g[r][c],d=document.createElement('div');
@@ -150,17 +150,18 @@ remove(cells,r,c,bomb);score+=pts;moves--;
 const say=size>=9?'¡INCREÍBLE!':size>=6?'¡Genial!':size>=4?'¡Bien!':'';
 float(r,c,'+'+pts+(streak>1?'  x'+mult.toFixed(2).replace(/0$/,''):''));
 if(say)setTimeout(()=>float(Math.max(r-1,0),c,say),120);
-const gain=Math.floor(size/3);if(gain){coins+=gain}
+
 snd(380+Math.min(streak,8)*70,.11);vib(size>=6?[15,30,15]:12);
 render();afterMove(size)}
 
 function afterMove(){hud();
 if(score>best){best=score;hud()}
-if(score>=goal){busy=true;const bonus=moves*3+20;coins+=bonus;snd(660,.3);setTimeout(()=>snd(880,.4),150);vib([40,40,40]);
+if(score>=goal){busy=true;const bonus=15;coins+=bonus;snd(660,.3);setTimeout(()=>snd(880,.4),150);vib([40,40,40]);
 party();setTimeout(()=>modal(`<div class="big">${moves>=8?'★★★':moves>=4?'★★☆':'★☆☆'}</div><h2>¡Nivel ${lvl} superado!</h2><p>${score} puntos · +${bonus} monedas de bonus</p>
 <button class="btn" onclick="next()">Siguiente nivel</button><button class="btn g" onclick="share()">Compartir</button>`),700);return}
-if(moves<=0){busy=true;setTimeout(()=>modal(`<h2>¡Sin movimientos!</h2><p>Te faltaron ${goal-score} puntos. ¡Estabas cerca!</p>
-<button class="btn" onclick="cont()">Seguir +5 movimientos · 30 monedas</button>${bought?'':'<button class="btn g" onclick="buy(\'p4\')">Oferta: 500 monedas por $0.99</button>'}<button class="btn g" onclick="revive()">Ver anuncio: +5 movimientos</button>
+if(moves<=0){busy=true;if(!lost){lost=1;if(!passOn()){spend();hud()}}
+setTimeout(()=>modal(`<h2>¡Sin movimientos!</h2><p>Te faltaron ${goal-score} puntos · Vidas: ${passOn()?'∞':lives}</p>
+<button class="btn" onclick="cont()">Seguir +5 movimientos · 30 monedas</button>${bought?'':'<button class="btn g" onclick="buy(\'p4\')">Oferta: 500 monedas por $0.99</button>'}
 <button class="btn g" onclick="retry()">Reintentar nivel</button><button class="btn g" onclick="shop()">Tienda</button>`),500);return}
 if(!hasMove()){shuffle();render();float(4,3,'¡Mezcla!')}}
 
@@ -168,15 +169,25 @@ function party(){for(let i=0;i<70;i++){const a=Math.random()*6.28,s=3+Math.rando
 fx.push({x:b.width/2,y:b.height/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,l:1.6,c:col(i%N)})}loop()}
 function modal(h){md.innerHTML=h;ov.classList.add('s')}
 function closeModal(){ov.classList.remove('s');busy=false}
-function back(){closeModal();hud();if(moves<=0&&score<goal)afterMove()}
-function cont(){if(coins>=30){coins-=30;moves+=5;closeModal();hud();snd(600,.2)}else shop()}
+function back(){closeModal();hud();if(moves<=0&&score<goal)afterMove();else if(!canPlay())noLives()}
+const REGEN=25*60*1e3;
+function passOn(){return passUntil>Date.now()}
+function regen(){if(lives>=5){lt=Date.now();return}const n=Math.floor((Date.now()-lt)/REGEN);if(n>0){lives=Math.min(5,lives+n);lt=lives>=5?Date.now():lt+n*REGEN}}
+function canPlay(){regen();return passOn()||lives>0}
+function spend(){if(lives>=5)lt=Date.now();lives=Math.max(0,lives-1)}
+function fmt(){const q=Math.max(0,Math.ceil((lt+REGEN-Date.now())/1000));return Math.floor(q/60)+':'+String(q%60).padStart(2,'0')}
+function noLives(){modal(`<div class="big">♡</div><h2>¡Sin vidas!</h2><p>Próxima vida en <b id="cd">${fmt()}</b></p>
+<button class="btn" onclick="buyLife()">Recuperar 1 vida · 25 monedas</button>
+<button class="btn g" onclick="buy('p3')">Vidas ilimitadas 7 días · $2.99</button>`)}
+function buyLife(){if(coins<25)return shop();coins-=25;lives=Math.min(5,lives+1);hud();retry()}
+function cont(){if(coins>=30){coins-=30;moves+=5;lost=0;if(!passOn())lives=Math.min(5,lives+1);closeModal();hud();snd(600,.2)}else shop()}
+setInterval(()=>{regen();$('#bs').textContent=passOn()?'∞':lives;const e=$('#cd');if(e){e.textContent=fmt();if(canPlay())retry()}},1000);
 function daily(){const d=new Date().toDateString();if(lastDay===d)return;
-ds=lastDay===new Date(Date.now()-864e5).toDateString()?ds+1:1;lastDay=d;const r=Math.min(10+ds*10,100),n=Math.min(10+(ds+1)*10,100);coins+=r;hud();snd(700,.25);
-modal(`<div class="big">+${r}</div><h2>Regalo diario</h2><p>Racha: ${ds} día${ds>1?'s':''}. Vuelve mañana por +${n} monedas.</p><button class="btn" onclick="closeModal()">¡Recoger!</button>`)}
+ds=lastDay===new Date(Date.now()-864e5).toDateString()?ds+1:1;lastDay=d;const r=Math.min(ds*10,100),n=Math.min((ds+1)*10,100);coins+=r;hud();snd(700,.25);
+modal(`<div class="big">+${r}</div><h2>Regalo diario</h2><p>Racha: ${ds} día${ds>1?'s':''}. Vuelve mañana por +${n} monedas.</p><button class="btn" onclick="back()">¡Recoger!</button>`)}
 function next(){lvl++;closeModal();startLevel()}
-function retry(){closeModal();startLevel()}
-async function revive(){md.innerHTML='<h2>Cargando anuncio…</h2>';if(!noAds)await CONFIG.showRewardedAd();moves+=5;closeModal();hud()}
-function shop(){modal(`<h2>Tienda</h2><p>Tus monedas: ${coins}${noAds?' · Sin anuncios ✓':''}</p>`+CONFIG.packs.filter(p=>!p.once||!bought).map(p=>
+function retry(){if(!canPlay())return noLives();closeModal();startLevel()}
+function shop(){modal(`<h2>Tienda</h2><p>Tus monedas: ${coins}${passOn()?' · Vidas ilimitadas ✓':''}</p>`+CONFIG.packs.filter(p=>!p.once||!bought).map(p=>
 `<button class="btn" onclick="buy('${p.id}')">${p.n} · ${p.p}${p.once?'<small>Oferta única de bienvenida (mejor valor)</small>':''}</button>`).join('')+
 `<p style="font-size:12px;margin:12px 0 0">Pago seguro con PayPal o tarjeta.</p><button class="btn g" onclick="back()">Volver</button>`)}
 let ppL;
@@ -192,7 +203,7 @@ try{await loadPP()}catch(e){pp.textContent='No se pudo cargar el pago. Revisa tu
 paypal.Buttons({style:{layout:'vertical',shape:'pill',label:'pay'},
 createOrder:async()=>{const d=await post('create-order',{pack:id});if(!d.id)throw new Error('order');return d.id},
 onApprove:async d=>{const x=await post('capture-order',{orderID:d.orderID});
-if(x.ok){bought=1;coins+=x.coins;if(x.noAds)noAds=1;hud();snd(700,.3);party();modal(`<div class="big">★</div><h2>¡Gracias!</h2><p>+${x.coins} monedas añadidas</p><button class="btn" onclick="closeModal()">Seguir jugando</button>`)}
+if(x.ok){bought=1;coins+=x.coins;if(x.passDays)passUntil=Math.max(Date.now(),passUntil)+x.passDays*864e5;hud();snd(700,.3);party();modal(`<div class="big">★</div><h2>¡Gracias!</h2><p>${x.passDays?'Vidas ilimitadas activadas':'+'+x.coins+' monedas añadidas'}</p><button class="btn" onclick="back()">Seguir jugando</button>`)}
 else pp.textContent='No pudimos confirmar el pago. Si se te cobró, escríbenos con tu comprobante de PayPal.'},
 onError:()=>{pp.textContent='Hubo un problema con el pago. Inténtalo de nuevo.'}}).render('#pp')}
 function share(){const t=`Superé el nivel ${lvl} en Gemas Pop con ${score} puntos. ¿Me ganas?`;
@@ -201,8 +212,9 @@ navigator.share?navigator.share({text:t,url:location.href}).catch(()=>{}):naviga
 bd.addEventListener('pointerdown',e=>{const t=e.target.closest('.t');if(t)tap(+t.dataset.r,+t.dataset.c)});
 $('#bh').onclick=()=>{if(busy)return;if(hammer){hammer=false}else if(coins>=30){coins-=30;hammer=true;hud()}else return shop();$('#bh').classList.toggle('on',hammer)};
 $('#bsh').onclick=()=>{if(busy)return;if(coins<20)return shop();coins-=20;shuffle();render();hud();snd(500,.2)};
+$('#bb').onclick=()=>{if(busy)return;if(coins<40)return shop();coins-=40;g[4][3]={t:g[4][3].t,b:1};render();hud();snd(500,.2)};
 $('#cb').onclick=()=>{if(!busy)shop()};
-modal(`<div class="big">◆</div><h2>Gemas Pop</h2><p>Toca 2 o más gemas iguales pegadas. Grupos de 6 crean una ★ bomba. ¡Encadena combos para más puntos!</p><button class="btn" onclick="closeModal();snd(520);daily()">Jugar</button>`);
+modal(`<div class="big">◆</div><h2>Gemas Pop</h2><p>Toca 2 o más gemas iguales pegadas. Grupos de 6 crean una ★ bomba. ¡Encadena combos para más puntos!</p><button class="btn" onclick="closeModal();snd(520);daily();if(!ov.classList.contains('s'))back()">Jugar</button>`);
 startLevel();
 </script>
 </body>

@@ -3,7 +3,7 @@ const PACKS = {
   p1: { name: '150 monedas', price: '0.99', coins: 150 },
   p2: { name: '500 monedas', price: '2.99', coins: 500 },
   p4: { name: 'Pack inicial (oferta única)', price: '0.99', coins: 500 },
-  p3: { name: 'Sin anuncios + 1000 monedas', price: '4.99', coins: 1000, noAds: true },
+  p3: { name: 'Vidas ilimitadas 7 días', price: '2.99', coins: 0, passDays: 7 },
 };
 const CURRENCY = 'USD';
 const BASE = process.env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';

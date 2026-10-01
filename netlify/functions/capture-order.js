@@ -15,7 +15,7 @@ exports.handler = async (event) => {
     // Una orden no puede capturarse dos veces, así que no se puede repetir para ganar monedas.
     if (d.status === 'COMPLETED' && cap.status === 'COMPLETED' && pk &&
         cap.amount.value === pk.price && cap.amount.currency_code === CURRENCY)
-      return json(200, { ok: true, coins: pk.coins, noAds: !!pk.noAds });
+      return json(200, { ok: true, coins: pk.coins, passDays: pk.passDays || 0 });
     return json(402, { ok: false });
   } catch (e) { return json(500, { ok: false }); }
 };
